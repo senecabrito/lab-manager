@@ -18,6 +18,7 @@ public class Usuario {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @JdbcTypeCode(SqlTypes.BINARY)
+    @Column(name = "id_usuario")
     private UUID id;
 
     private String nome;
