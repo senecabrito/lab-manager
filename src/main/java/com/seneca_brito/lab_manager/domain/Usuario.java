@@ -3,6 +3,8 @@ package com.seneca_brito.lab_manager.domain;
 import com.seneca_brito.lab_manager.shared.ENUM.TipoDeUsuarios;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -14,11 +16,13 @@ public class Usuario {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @JdbcTypeCode(SqlTypes.BINARY)
     private UUID id;
 
     private String nome;
 
     private String email;
+
     private String senha;
 
     @Column(name = "tipo_usuario")
