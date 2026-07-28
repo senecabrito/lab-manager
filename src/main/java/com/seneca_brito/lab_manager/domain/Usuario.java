@@ -6,11 +6,12 @@ import lombok.Data;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Table(name = "Usuario")
+@Table(name = "usuario")
 @Data
 public class Usuario {
 
@@ -29,6 +30,9 @@ public class Usuario {
     private TipoDeUsuarios tipoDeUsuarios;
 
     private String curso;
+
+    @OneToMany(mappedBy = "usuario",cascade = CascadeType.ALL)
+    private ArrayList<Reserva> reservas;
 
     @Override
     public boolean equals(Object o) {
