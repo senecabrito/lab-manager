@@ -29,6 +29,10 @@ public class Reserva {
     @Column(name = "horario_fim")
     private LocalDateTime horarioFim;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_id_usuario")
+    private Usuario usuario;
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
