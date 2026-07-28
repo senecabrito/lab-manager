@@ -6,7 +6,7 @@ import lombok.Data;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -32,8 +32,11 @@ public class Usuario {
 
     private String curso;
 
-    @OneToMany(mappedBy = "usuario",cascade = CascadeType.ALL)
-    private ArrayList<Reserva> reservas;
+    @OneToMany(mappedBy = "usuario",fetch = FetchType.LAZY)
+    private List<Reserva> reservas;
+
+    @OneToMany(mappedBy = "usuario",fetch = FetchType.LAZY)
+    private List<Reclamacao> reclamacoes;
 
     @Override
     public boolean equals(Object o) {

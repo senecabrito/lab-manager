@@ -31,6 +31,10 @@ public class Reclamacao {
     private LocalDateTime DataReclamacao;
 
     private StatusReclamacao status;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_id_usuario")
+    private Usuario usuario;
     
 
     @Override
