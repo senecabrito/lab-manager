@@ -7,6 +7,7 @@ import lombok.Data;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -31,6 +32,12 @@ public class Laboratorio {
 
     @Column(name = "tipo_laboratorio")
     private TipoLaboratorio tipoLaboratorio;
+
+    @OneToMany(mappedBy = "laboratorio",fetch = FetchType.LAZY)
+    private List<Reserva> reservas;
+
+    @OneToMany(mappedBy = "laboratorio",fetch = FetchType.LAZY)
+    private List<Reclamacao> reclamacoes;
 
     @Override
     public boolean equals(Object o) {

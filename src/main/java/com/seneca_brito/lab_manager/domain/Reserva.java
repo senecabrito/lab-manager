@@ -33,6 +33,10 @@ public class Reserva {
     @JoinColumn(name = "fk_id_usuario")
     private Usuario usuario;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_id_laboratorio")
+    private Laboratorio laboratorio;
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
