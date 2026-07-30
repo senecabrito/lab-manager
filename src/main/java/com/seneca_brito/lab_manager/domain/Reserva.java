@@ -4,9 +4,10 @@ import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.data.annotation.CreatedDate;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -24,10 +25,10 @@ public class Reserva {
     private LocalDate dataReserva;
 
     @Column(name = "horario_inicio")
-    private LocalDateTime horarioInicio;
+    private LocalTime horarioInicio;
 
     @Column(name = "horario_fim")
-    private LocalDateTime horarioFim;
+    private LocalTime horarioFim;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_id_usuario")

@@ -11,7 +11,7 @@ public record UsuarioRequestDTO(
         @NotBlank(message = "Campo obrigatorio")
         @Max(value = 50, message = "nome muito longo, crie uma com menos caracteres")
         @Min(value = 3, message = "nome muito longo, crie uma com menos caracteres")
-        String name,
+        String nome,
 
         @NotBlank(message = "Campo obrigatorio")
         @Email(message = "Insira um email válido")
@@ -22,7 +22,7 @@ public record UsuarioRequestDTO(
         @NotBlank(message = "Campo obrigatorio")
         @Max(value = 60, message = "senha muito longa, crie uma com menos caracteres")
         @Min(value = 5, message = "senha muito curta, crie uma com menos caracteres")
-        String password,
+        String senha,
 
         @NotBlank
         @Max(value = 50, message = "nome do curso muito longo, crie uma com menos caracteres")
