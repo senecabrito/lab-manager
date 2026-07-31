@@ -1,7 +1,7 @@
 package com.seneca_brito.lab_manager.application.Commands.usuario.create;
 
 import com.seneca_brito.lab_manager.domain.Usuario;
-import com.seneca_brito.lab_manager.shared.DTOs.UsuarioRequestDTO;
+import com.seneca_brito.lab_manager.shared.DTOs.usuarioDTOs.UsuarioRequestDTO;
 import com.seneca_brito.lab_manager.shared.mappers.UsuarioMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

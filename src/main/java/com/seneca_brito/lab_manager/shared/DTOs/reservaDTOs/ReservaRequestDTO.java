@@ -1,4 +1,4 @@
-package com.seneca_brito.lab_manager.shared.DTOs;
+package com.seneca_brito.lab_manager.shared.DTOs.reservaDTOs;
 
 import jakarta.validation.constraints.NotNull;
 

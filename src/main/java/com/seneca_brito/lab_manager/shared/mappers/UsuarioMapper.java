@@ -1,7 +1,7 @@
 package com.seneca_brito.lab_manager.shared.mappers;
 
 import com.seneca_brito.lab_manager.domain.Usuario;
-import com.seneca_brito.lab_manager.shared.DTOs.UsuarioRequestDTO;
+import com.seneca_brito.lab_manager.shared.DTOs.usuarioDTOs.UsuarioRequestDTO;
 import org.mapstruct.Mapper;
 
 @Mapper

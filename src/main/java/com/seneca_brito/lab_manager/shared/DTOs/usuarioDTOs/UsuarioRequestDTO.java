@@ -1,9 +1,6 @@
-package com.seneca_brito.lab_manager.shared.DTOs;
+package com.seneca_brito.lab_manager.shared.DTOs.usuarioDTOs;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.*;
 
 public record UsuarioRequestDTO(
 
@@ -21,7 +18,10 @@ public record UsuarioRequestDTO(
 
         @NotBlank(message = "Campo obrigatorio")
         @Max(value = 60, message = "senha muito longa, crie uma com menos caracteres")
-        @Min(value = 5, message = "senha muito curta, crie uma com menos caracteres")
+        @Pattern(
+                regexp = "^(?=.*\\d)(?=.*[@$!%*?&.#_-])[A-Za-z\\d@$!%*?&.#_-]{8,}$",
+                message = "A senha deve conter no mínimo 8 caracteres, 1 número e 1 caractere especial."
+        )
         String senha,
 
         @NotBlank

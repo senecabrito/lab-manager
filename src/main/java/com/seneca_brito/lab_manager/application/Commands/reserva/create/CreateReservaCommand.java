@@ -1,7 +1,7 @@
 package com.seneca_brito.lab_manager.application.Commands.reserva.create;
 
 import com.seneca_brito.lab_manager.domain.Reserva;
-import com.seneca_brito.lab_manager.shared.DTOs.ReservaRequestDTO;
+import com.seneca_brito.lab_manager.shared.DTOs.reservaDTOs.ReservaRequestDTO;
 import com.seneca_brito.lab_manager.shared.mappers.ReservaMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
