@@ -6,27 +6,24 @@ public record UsuarioRequestDTO(
 
 
         @NotBlank(message = "Campo obrigatorio")
-        @Max(value = 50, message = "nome muito longo, crie uma com menos caracteres")
-        @Min(value = 3, message = "nome muito longo, crie uma com menos caracteres")
+        @Size(min = 3, max = 50, message = "nome deve ter entre 3 e 50 caracteres")
         String nome,
 
         @NotBlank(message = "Campo obrigatorio")
         @Email(message = "Insira um email válido")
-        @Max(value = 100, message = "email muito longo, crie uma com menos caracteres")
-        @Min(value = 5, message = "email muito curto, crie uma com menos caracteres")
+        @Size(min = 5, max = 100, message = "email deve ter entre 5 e 100 caracteres")
         String email,
 
         @NotBlank(message = "Campo obrigatorio")
-        @Max(value = 60, message = "senha muito longa, crie uma com menos caracteres")
+        @Size(max = 60, message = "senha deve ter no máximo 60 caracteres")
         @Pattern(
                 regexp = "^(?=.*\\d)(?=.*[@$!%*?&.#_-])[A-Za-z\\d@$!%*?&.#_-]{8,}$",
                 message = "A senha deve conter no mínimo 8 caracteres, 1 número e 1 caractere especial."
         )
         String senha,
 
-        @NotBlank
-        @Max(value = 50, message = "nome do curso muito longo, crie uma com menos caracteres")
-        @Min(value = 5, message = "nome do curso muito longo, crie uma com menos caracteres")
+        @NotBlank(message = "Campo obrigatorio")
+        @Size(min = 5, max = 50, message = "curso deve ter entre 5 e 50 caracteres")
         String curso
 ) {
 }

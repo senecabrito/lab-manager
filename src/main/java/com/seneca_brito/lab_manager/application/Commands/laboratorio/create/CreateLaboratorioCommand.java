@@ -3,6 +3,7 @@ package com.seneca_brito.lab_manager.application.Commands.laboratorio.create;
 import com.seneca_brito.lab_manager.domain.Laboratorio;
 import com.seneca_brito.lab_manager.shared.DTOs.laboratorioDTOs.LaboratorioRequestDTO;
 import com.seneca_brito.lab_manager.shared.mappers.LaboratorioMapper;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,7 +22,7 @@ public class CreateLaboratorioCommand {
     private final LaboratorioMapper laboratorioMapper;
 
     @PostMapping
-    public ResponseEntity<Void> createLaboratorio(@RequestBody LaboratorioRequestDTO laboratorioDTO) {
+    public ResponseEntity<Void> createLaboratorio(@RequestBody @Valid LaboratorioRequestDTO laboratorioDTO) {
         Laboratorio laboratorio = laboratorioMapper.toModel(laboratorioDTO);
 
         Laboratorio response = laboratorioHandler.create(laboratorio);

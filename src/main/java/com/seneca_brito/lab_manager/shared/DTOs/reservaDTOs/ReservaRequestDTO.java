@@ -18,9 +18,9 @@ public record ReservaRequestDTO(
         LocalTime horarioFim,
 
         @NotNull(message = "Campo obrigatorio")
-        UUID idUsuario,
+        UUID usuarioId,
 
         @NotNull(message = "Campo obrigatorio")
-        UUID idLaboratorio
+        UUID laboratorioId
 ) {
 }
