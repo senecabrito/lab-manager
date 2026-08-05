@@ -1,9 +1,7 @@
 package com.seneca_brito.lab_manager.application.Commands.reclamacao.create;
 
 import com.seneca_brito.lab_manager.domain.Reclamacao;
-import com.seneca_brito.lab_manager.domain.Reserva;
 import com.seneca_brito.lab_manager.shared.DTOs.reclamacaoDTOs.ReclamacaoRequestDTO;
-import com.seneca_brito.lab_manager.shared.DTOs.reservaDTOs.ReservaRequestDTO;
 import com.seneca_brito.lab_manager.shared.mappers.ReclamacaoMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
