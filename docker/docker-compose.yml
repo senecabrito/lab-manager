@@ -15,7 +15,6 @@ services:
 
     volumes:
       - mysql_data:/var/lib/mysql
-      - ../src/main/resources/db/migration/V1__create_initial_schema.sql:/docker-entrypoint-initdb.d/schema.sql
 
 volumes:
   mysql_data:
