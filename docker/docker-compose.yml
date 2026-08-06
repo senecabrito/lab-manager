@@ -7,15 +7,15 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: lab_manager
-      MYSQL_USER: admin
-      MYSQL_PASSWORD: admin123
+      MYSQL_USER: ${DB_USERNAME:-admin}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-admin123}
 
     ports:
-      - "3306:3306"
+      - "3307:3306"
 
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./src/main/resources/db/migration/V1__create_initial_schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - ../src/main/resources/db/migration/V1__create_initial_schema.sql:/docker-entrypoint-initdb.d/schema.sql
 
 volumes:
   mysql_data:
