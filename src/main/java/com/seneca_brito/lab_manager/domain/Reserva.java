@@ -19,23 +19,24 @@ public class Reserva {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @JdbcTypeCode(SqlTypes.BINARY)
+    @Column(name = "id_reserva", nullable = false, columnDefinition = "BINARY(16)")
     private UUID id;
 
-    @Column(name = "data_reserva")
+    @Column(name = "data_reserva", nullable = false)
     private LocalDate dataReserva;
 
-    @Column(name = "horario_inicio")
+    @Column(name = "horario_inicio", nullable = false)
     private LocalTime horarioInicio;
 
-    @Column(name = "horario_fim")
+    @Column(name = "horario_fim", nullable = false)
     private LocalTime horarioFim;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_id_usuario")
+    @JoinColumn(name = "fk_id_usuario", nullable = false)
     private Usuario usuario;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_id_laboratorio")
+    @JoinColumn(name = "fk_id_laboratorio", nullable = false)
     private Laboratorio laboratorio;
 
     @Override

@@ -8,6 +8,6 @@ public enum TipoLaboratorio {
     ROBOTICA,
     ELETRONICA,
     MULTIDISCIPLINAR,
-    INDIOMAS,
+    IDIOMAS,
     OUTRO
 }

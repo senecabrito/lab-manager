@@ -18,18 +18,23 @@ public class Usuario {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @JdbcTypeCode(SqlTypes.BINARY)
-    @Column(name = "id_usuario")
+    @Column(name = "id_usuario", nullable = false, columnDefinition = "BINARY(16)")
     private UUID id;
 
+    @Column(name = "nome", nullable = false, length = 50)
     private String nome;
 
+    @Column(name = "email", nullable = false, unique = true, length = 100)
     private String email;
 
+    @Column(name = "senha", nullable = false, length = 60)
     private String senha;
 
-    @Column(name = "tipo_usuario")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_usuario", nullable = false, columnDefinition = "ENUM('ADMIN','PROF')")
     private TipoDeUsuarios tipoDeUsuarios;
 
+    @Column(name = "curso", nullable = false, length = 120)
     private String curso;
 
     @OneToMany(mappedBy = "usuario",fetch = FetchType.LAZY)
