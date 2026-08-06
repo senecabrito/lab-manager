@@ -2,31 +2,17 @@ package com.seneca_brito.lab_manager.shared.DTOs.reclamacaoDTOs;
 
 import com.seneca_brito.lab_manager.shared.ENUM.CategoriaProblema;
 import com.seneca_brito.lab_manager.shared.ENUM.StatusReclamacao;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public record ReclamacaoRequestDTO(
-
-        @NotBlank(message = "Campo obrigatorio")
+public record ReclamacaoResponseDTO(
+        UUID id,
         String descricao,
-
-        @NotNull(message = "Campo obrigatorio")
         CategoriaProblema categoriaProblema,
-
-        @NotNull(message = "Campo obrigatorio")
         LocalDateTime dataReclamacao,
-
-        @NotNull(message = "Campo obrigatorio")
         StatusReclamacao status,
-
-        @NotNull(message = "Campo obrigatorio")
         UUID usuarioId,
-
-        @NotNull(message = "Campo obrigatorio")
         UUID laboratorioId
 ) {
-
 }
