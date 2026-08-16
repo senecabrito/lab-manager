@@ -1,4 +1,4 @@
-package com.seneca_brito.lab_manager.infrastructure.security.config;
+package com.seneca_brito.lab_manager.infrastructure.security;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;

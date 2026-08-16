@@ -1,5 +1,6 @@
 package com.seneca_brito.lab_manager.domain;
 
+import com.seneca_brito.lab_manager.infrastructure.security.RolesEntity;
 import com.seneca_brito.lab_manager.shared.ENUM.TipoDeUsuarios;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -9,10 +10,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 @Entity
 @Table(name = "Usuario")
@@ -47,6 +45,13 @@ public class Usuario implements UserDetails {
     @OneToMany(mappedBy = "usuario",fetch = FetchType.LAZY)
     private List<Reclamacao> reclamacoes;
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "usuario_roles",
+            joinColumns = @JoinColumn(name = "usuario_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id"))
+    private Set<RolesEntity> roles = new HashSet<>();
+
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
@@ -61,17 +66,17 @@ public class Usuario implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        return roles;
     }
 
     @Override
     public @Nullable String getPassword() {
-        return "";
+        return senha;
     }
 
     @Override
     public String getUsername() {
-        return "";
+        return email;
     }
 
     @Override
