@@ -1,6 +1,7 @@
 package com.seneca_brito.lab_manager.infrastructure.security.config;
 
 import com.seneca_brito.lab_manager.shared.DTOs.usuarioDTOs.UsuarioResponseDTO;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,7 +41,24 @@ public class TokenProvider {
         return Keys.hmacShaKeyFor(key.getBytes());
     }
     //validar token
+    public boolean isTokenValid(String token) {
+        try{
+            getClaimsFromToken(token);
+            return true;
+        }catch (Exception e){
+            return false;
+        }
+    }
 
+    private Claims getClaimsFromToken(String token) {
+        //validar assinatura
+        //validar expiracao
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+    }
 
-    //extrair informações
+    //extrair informacoes
 }
