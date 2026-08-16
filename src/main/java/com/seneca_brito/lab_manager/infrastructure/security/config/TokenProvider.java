@@ -61,4 +61,7 @@ public class TokenProvider {
     }
 
     //extrair informacoes
+    private String getUsernameFromToken(String token) {
+        return getClaimsFromToken(token).getSubject();
+    }
 }
