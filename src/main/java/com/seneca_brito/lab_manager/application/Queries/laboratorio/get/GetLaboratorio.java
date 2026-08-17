@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,7 +27,7 @@ public class GetLaboratorio {
             @RequestParam(required = false) Integer capacidadeMinima,
             @RequestParam(required = false) String localizacao,
             @RequestParam(required = false) Set<String> recursos,
-            Pageable pageable) {
+            @ParameterObject Pageable pageable) {
         Page<Laboratorio> page = handler.find(capacidadeMinima, localizacao, recursos, pageable);
         var content = page.getContent().stream()
                 .map(mapper::toListDto)

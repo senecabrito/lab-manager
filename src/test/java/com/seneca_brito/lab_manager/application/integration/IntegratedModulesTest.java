@@ -127,6 +127,11 @@ class IntegratedModulesTest {
 
     @Test
     void principalFlowKeepsCalendarConsistentThroughApprovalAndCancellation() throws Exception {
+        mockMvc.perform(get("/api/v1/usuarios/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(usuarioToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value(usuario.getEmail()));
+
         UUID labId = createLaboratory("Lab Agenda");
         mockMvc.perform(get("/api/v1/laboratorios/{id}/calendario", labId)
                         .param("data", reservationDate.toString())

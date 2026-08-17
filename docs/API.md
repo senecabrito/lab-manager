@@ -4,6 +4,39 @@ Esta documentação cobre os módulos de laboratórios, calendário, reservas, a
 reclamações, dashboard e relatórios. Todas as rotas abaixo usam o prefixo `/api/v1` e,
 salvo login/cadastro, exigem `Authorization: Bearer <token>`.
 
+## Contrato oficial e interface interativa
+
+O contrato oficial é gerado a partir da aplicação em execução com OpenAPI 3.1:
+
+- JSON: `GET /v3/api-docs`;
+- Swagger UI: `GET /swagger-ui/index.html`.
+
+Na versão homologada pela T27, o documento contém 23 caminhos, 34 operações e 30
+schemas em `components.schemas`.
+
+Essas duas rotas de documentação são públicas. O esquema `bearerAuth` representa o JWT
+enviado em `Authorization: Bearer <token>`. No Swagger UI, use **Authorize** depois do
+login. O contrato marca login e cadastro como públicos e descreve cada rota protegida
+como autenticada, administrativa ou restrita ao proprietário/administração.
+
+## Autenticação e usuários
+
+| Método e rota | Acesso | Resposta |
+| --- | --- | --- |
+| `POST /autenticacao/login` | Público | `TokenResponseDTO` (`token`, `expiresIn`) |
+| `POST /autenticacao/cadastro` | Público | `201` + `Location`, sem corpo |
+| `POST /usuarios` | Administração | `201` + `Location`, sem corpo |
+| `GET /usuarios` | Administração | `PagedModel<UsuarioMinDTO>` |
+| `GET /usuarios/{id}` | Administração | `UsuarioResponseDTO` |
+| `PATCH /usuarios/{id}` | Administração | `UsuarioResponseDTO` |
+| `DELETE /usuarios/{id}` | Administração | `204`, sem corpo |
+| `GET /usuarios/me` | Autenticado | `UsuarioResponseDTO` |
+| `PATCH /usuarios/me` | Autenticado | `UsuarioResponseDTO` |
+
+O login usa `email` e `senha`. A listagem administrativa preserva a separação B03 e
+expõe somente `nome` e `curso`; detalhes e perfil incluem os demais campos permitidos,
+nunca senha, hash ou coleção de papéis internos.
+
 ## Configuração da agenda
 
 A agenda usa uma única configuração central no backend. Os valores padrão são:
@@ -36,6 +69,24 @@ Filtros de listagem: `capacidadeMinima`, `localizacao` e `recursos`. Recursos re
 na query representam condição **E**: o laboratório precisa possuir todos eles. A
 capacidade é comparada por `>=`; localização não diferencia maiúsculas/minúsculas.
 Também são aceitos os parâmetros padrão de página `page`, `size` e `sort`.
+
+Listagens paginadas de usuários, laboratórios, reservas e reclamações usam o formato
+real do `PagedModel`:
+
+```json
+{
+  "content": [],
+  "page": {
+    "size": 20,
+    "number": 0,
+    "totalElements": 0,
+    "totalPages": 0
+  }
+}
+```
+
+Coleções vazias retornam `200` com `content: []`; relatórios que retornam listas usam
+`[]`. Não se usa `404` para uma listagem vazia.
 
 Exemplo de criação:
 
@@ -140,7 +191,8 @@ por nome e UUID para manter ordem estável.
 ## Respostas e erros
 
 Criações retornam `201 Created` e cabeçalho `Location`; leituras/alterações retornam
-`200 OK`; exclusão física de laboratório retorna `204 No Content`.
+`200 OK`; exclusões físicas de usuário e laboratório retornam `204 No Content`, sem
+`Content-Type` e sem corpo.
 
 O formato de erro contém `status`, `message` e a lista `erro`; cada erro de campo usa
 `campo` e `erro`. Códigos principais:
@@ -153,6 +205,38 @@ O formato de erro contém `status`, `message` e a lista `erro`; cada erro de cam
 | `404` | Recurso inexistente |
 | `409` | Sobreposição, transição inválida ou integridade referencial |
 | `422` | Campo inválido ou regra de negócio violada |
+| `500` | Falha inesperada; mensagem sanitizada sem detalhes internos |
+
+Exemplo real de erro de campo (`422`):
+
+```json
+{
+  "status": 422,
+  "message": "Erro de validacao",
+  "erro": [
+    { "campo": "nome", "erro": "Campo obrigatorio" }
+  ]
+}
+```
+
+Exemplo real de autenticação (`401`):
+
+```json
+{
+  "status": 401,
+  "message": "Autenticacao obrigatoria",
+  "erro": []
+}
+```
+
+O mesmo schema `ErroResponse` é documentado para `400`, `401`, `403`, `404`, `409`,
+`422` e `500`.
+
+## Homologação do frontend
+
+A auditoria somente leitura do repositório frontend e a matriz por tela estão em
+[`HOMOLOGACAO_FRONTEND_T27.md`](HOMOLOGACAO_FRONTEND_T27.md). Divergências encontradas
+não foram compensadas com aliases ou alterações de regra no backend.
 
 ## Contratos de entrada e saída
 

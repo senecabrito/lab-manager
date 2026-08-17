@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.web.PagedModel;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +31,7 @@ public class GetReserva {
             @RequestParam(required = false) UUID laboratorioId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
             @RequestParam(required = false) StatusReserva status,
-            Pageable pageable) {
+            @ParameterObject Pageable pageable) {
         return response(handler.find(null, laboratorioId, data, status, pageable));
     }
 
@@ -39,7 +40,7 @@ public class GetReserva {
             @RequestParam(required = false) UUID laboratorioId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
             @RequestParam(required = false) StatusReserva status,
-            Pageable pageable, Authentication authentication) {
+            @ParameterObject Pageable pageable, Authentication authentication) {
         return response(handler.find(authentication.getName(), laboratorioId, data, status, pageable));
     }
 

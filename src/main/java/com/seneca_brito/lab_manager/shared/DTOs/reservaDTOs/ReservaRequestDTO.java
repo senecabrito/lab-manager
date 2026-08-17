@@ -1,5 +1,6 @@
 package com.seneca_brito.lab_manager.shared.DTOs.reservaDTOs;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
@@ -13,10 +14,10 @@ public record ReservaRequestDTO(
         LocalDate dataReserva,
 
         @NotNull(message = "Campo obrigatorio")
-        LocalTime horarioInicio,
+        @Schema(type = "string", format = "time", example = "07:30:00") LocalTime horarioInicio,
 
         @NotNull(message = "Campo obrigatorio")
-        LocalTime horarioFim,
+        @Schema(type = "string", format = "time", example = "08:00:00") LocalTime horarioFim,
 
         @NotNull(message = "Campo obrigatorio")
         UUID laboratorioId,

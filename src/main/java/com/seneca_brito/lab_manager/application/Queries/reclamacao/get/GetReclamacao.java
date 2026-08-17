@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -29,7 +30,7 @@ public class GetReclamacao {
             @RequestParam(required = false) UUID laboratorioId,
             @RequestParam(required = false) StatusReclamacao status,
             @RequestParam(required = false) CategoriaProblema categoria,
-            Pageable pageable) {
+            @ParameterObject Pageable pageable) {
         return response(handler.find(null, laboratorioId, status, categoria, pageable));
     }
 
@@ -38,7 +39,7 @@ public class GetReclamacao {
             @RequestParam(required = false) UUID laboratorioId,
             @RequestParam(required = false) StatusReclamacao status,
             @RequestParam(required = false) CategoriaProblema categoria,
-            Pageable pageable, Authentication authentication) {
+            @ParameterObject Pageable pageable, Authentication authentication) {
         return response(handler.find(authentication.getName(), laboratorioId, status, categoria, pageable));
     }
 

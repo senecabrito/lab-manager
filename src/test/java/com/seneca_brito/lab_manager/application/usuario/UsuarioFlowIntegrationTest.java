@@ -15,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -40,6 +41,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -169,6 +171,19 @@ class UsuarioFlowIntegrationTest {
     }
 
     @Test
+    void emptyListingReturnsEmptyPagedModelInsteadOfNotFound() throws Exception {
+        when(usuarioRepository.findAll(any(Pageable.class)))
+                .thenAnswer(invocation -> Page.empty(invocation.getArgument(0)));
+
+        mockMvc.perform(get("/api/v1/usuarios")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isEmpty())
+                .andExpect(jsonPath("$.page.totalElements").value(0))
+                .andExpect(jsonPath("$.page.totalPages").value(0));
+    }
+
+    @Test
     void detailReturnsAllowedFieldsWithoutPassword() throws Exception {
         when(usuarioRepository.findById(USUARIO_ID)).thenReturn(Optional.of(usuario));
 
@@ -256,7 +271,9 @@ class UsuarioFlowIntegrationTest {
 
         mockMvc.perform(delete("/api/v1/usuarios/{id}", USUARIO_ID)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer admin-token"))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""))
+                .andExpect(header().doesNotExist(HttpHeaders.CONTENT_TYPE));
 
         verify(usuarioRepository).delete(usuario);
         verify(usuarioRepository).flush();

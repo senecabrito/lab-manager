@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,7 +25,7 @@ public class GetUsuario {
     private final UsuarioMapper  usuarioMapper;
 
     @GetMapping
-    public ResponseEntity<PagedModel<UsuarioMinDTO>> getAll(Pageable pageRequest) {
+    public ResponseEntity<PagedModel<UsuarioMinDTO>> getAll(@ParameterObject Pageable pageRequest) {
         Page<Usuario> page = usuarioHandler.findAll(pageRequest);
 
         List<UsuarioMinDTO> usuariosDto = page.getContent().stream().map(usuarioMapper::toMinDto).toList();

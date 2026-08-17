@@ -45,6 +45,10 @@ public class SecurityConfiguration {
                         .accessDeniedHandler((request, response, accessDeniedException) ->
                                 writeError(response, HttpStatus.FORBIDDEN, "Acesso negado")))
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**").permitAll()
                         .requestMatchers(HttpMethod.POST,
                                 "/api/v1/autenticacao/cadastro",
                                 "/api/v1/autenticacao/login").permitAll()
