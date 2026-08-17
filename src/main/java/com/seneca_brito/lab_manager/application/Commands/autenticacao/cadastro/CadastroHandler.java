@@ -6,6 +6,7 @@ import com.seneca_brito.lab_manager.infrastructure.repositories.UsuarioRepositor
 import com.seneca_brito.lab_manager.infrastructure.security.RolesEntity;
 import com.seneca_brito.lab_manager.shared.DTOs.usuarioDTOs.UsuarioRequestDTO;
 import com.seneca_brito.lab_manager.shared.ENUM.RoleTypeEnum;
+import com.seneca_brito.lab_manager.shared.ENUM.TipoDeUsuarios;
 import com.seneca_brito.lab_manager.shared.exceptions.RegistroDuplicadoException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -34,6 +35,8 @@ public class CadastroHandler {
         return usuarioRepository.save(Usuario.builder()
                 .nome(dto.nome())
                 .email(dto.email())
+                .curso(dto.curso())
+                .tipoDeUsuarios(TipoDeUsuarios.PROF)
                 .roles(Set.of(roles))
                 .senha(encoder.encode(dto.senha()))
                 .build());

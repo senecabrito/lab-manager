@@ -4,8 +4,10 @@ import com.seneca_brito.lab_manager.infrastructure.security.RolesEntity;
 import com.seneca_brito.lab_manager.shared.ENUM.TipoDeUsuarios;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.jspecify.annotations.Nullable;
@@ -17,6 +19,7 @@ import java.util.*;
 @Entity
 @Table(name = "Usuario")
 @Data
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 public class Usuario implements UserDetails {
@@ -53,6 +56,7 @@ public class Usuario implements UserDetails {
     @JoinTable(name = "usuario_roles",
             joinColumns = @JoinColumn(name = "usuario_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id"))
+    @Builder.Default
     private Set<RolesEntity> roles = new HashSet<>();
 
 

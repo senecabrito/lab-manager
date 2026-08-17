@@ -19,5 +19,6 @@ public interface UsuarioMapper {
     @Mapping(target = "tipoDeUsuarios", ignore = true)
     @Mapping(target = "reservas", ignore = true)
     @Mapping(target = "reclamacoes", ignore = true)
+    @Mapping(target = "roles", ignore = true)
     Usuario toModel(UsuarioRequestDTO usuarioRequestDTO);
 }

@@ -1,11 +1,11 @@
 package com.seneca_brito.lab_manager.infrastructure.security.config;
 
-import com.seneca_brito.lab_manager.shared.DTOs.usuarioDTOs.UsuarioResponseDTO;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -22,8 +22,8 @@ public class TokenProvider {
 
     //gerar token
     public String gerarToken(Authentication authentication) {
-        UsuarioResponseDTO usuario = (UsuarioResponseDTO) authentication.getPrincipal();
-       return buildToken(usuario.email());
+        UserDetails usuario = (UserDetails) authentication.getPrincipal();
+        return buildToken(usuario.getUsername());
     }
 
     public String buildToken(String username) {
