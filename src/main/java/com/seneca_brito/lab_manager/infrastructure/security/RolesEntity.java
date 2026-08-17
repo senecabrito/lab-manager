@@ -1,24 +1,24 @@
 package com.seneca_brito.lab_manager.infrastructure.security;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
+
+import java.util.UUID;
 
 @Entity
 @Table(name = "roles")
 @NoArgsConstructor
 @RequiredArgsConstructor
+@AllArgsConstructor
 @Data
+@Builder
 public class RolesEntity implements GrantedAuthority {
 
     @Id
-    private Integer id;
-
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
     private String nome;
 
 

@@ -3,6 +3,8 @@ package com.seneca_brito.lab_manager.domain;
 import com.seneca_brito.lab_manager.infrastructure.security.RolesEntity;
 import com.seneca_brito.lab_manager.shared.ENUM.TipoDeUsuarios;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -15,6 +17,8 @@ import java.util.*;
 @Entity
 @Table(name = "Usuario")
 @Data
+@AllArgsConstructor
+@Builder
 public class Usuario implements UserDetails {
 
     @Id
@@ -45,7 +49,7 @@ public class Usuario implements UserDetails {
     @OneToMany(mappedBy = "usuario",fetch = FetchType.LAZY)
     private List<Reclamacao> reclamacoes;
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "usuario_roles",
             joinColumns = @JoinColumn(name = "usuario_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id"))
