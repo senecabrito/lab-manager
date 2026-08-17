@@ -8,6 +8,9 @@ O `Dockerfile` da raiz usa build multi-stage com Java 21, a versão declarada no
 
 Os digests no `Dockerfile` tornam a base reproduzivel. A atualizacao das imagens deve
 ser deliberada, com novo build e homologacao, em vez de acontecer silenciosamente.
+O runtime atualiza explicitamente `libexpat`, `p11-kit` e `p11-kit-trust` para receber
+correcoes de seguranca disponiveis no repositorio da mesma versao do Alpine. Essa etapa
+foi adicionada apos o scan da CI detectar CVEs HIGH corrigiveis na imagem base oficial.
 
 O estágio de build usa exclusivamente o Maven Wrapper do repositório. Primeiro copia
 `pom.xml`, `mvnw` e `.mvn/` e executa `dependency:go-offline`; o código-fonte é copiado

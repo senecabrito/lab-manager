@@ -1,0 +1,332 @@
+name: backend-ci-$(Date:yyyyMMdd).$(Rev:r)
+
+trigger:
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  javaVersion: '21'
+  mavenCacheFolder: '$(Pipeline.Workspace)/.m2/repository'
+  mysqlImage: 'mysql:8.4'
+  spotBugsVersion: '4.10.3.0'
+  trivyVersion: '0.72.0'
+  trivyCacheFolder: '$(Pipeline.Workspace)/.trivy-cache'
+  imageName: 'lab-manager-api'
+  jarArtifactName: 'backend-jar'
+  imageArtifactName: 'backend-image'
+  securityArtifactName: 'security-reports'
+
+stages:
+  - stage: CI
+    displayName: Validate, scan, package and publish
+    jobs:
+      - job: Backend
+        displayName: Backend CI
+        timeoutInMinutes: 90
+        steps:
+          - checkout: self
+            clean: true
+            fetchDepth: 1
+
+          - bash: |
+              set -Eeuo pipefail
+              if [[ -z "${JAVA_HOME_21_X64:-}" ]]; then
+                echo 'Java 21 is not available on this agent.' >&2
+                exit 1
+              fi
+
+              export JAVA_HOME="${JAVA_HOME_21_X64}"
+              export PATH="${JAVA_HOME}/bin:${PATH}"
+              echo "##vso[task.setvariable variable=JAVA_HOME]${JAVA_HOME_21_X64}"
+              echo "##vso[task.prependpath]${JAVA_HOME_21_X64}/bin"
+              maven_repository="${HOME}/.m2/repository"
+              echo "##vso[task.setvariable variable=mavenCacheFolder]${maven_repository}"
+              mkdir -p "${maven_repository}" "$(trivyCacheFolder)"
+              mkdir -p "$(Build.ArtifactStagingDirectory)/security-reports"
+              chmod +x mvnw
+              java -version
+              ./mvnw -version
+            displayName: Configure Java $(javaVersion) and Maven Wrapper
+
+          - task: Cache@2
+            displayName: Restore Maven dependency cache
+            inputs:
+              key: 'maven | "$(Agent.OS)" | pom.xml | .mvn/wrapper/maven-wrapper.properties'
+              restoreKeys: |
+                maven | "$(Agent.OS)"
+              path: '$(mavenCacheFolder)'
+
+          - bash: |
+              set -Eeuo pipefail
+              ./mvnw -B -ntp \
+                -Dmaven.repo.local="$(mavenCacheFolder)" \
+                clean verify
+            displayName: Maven clean verify
+
+          - task: PublishTestResults@2
+            displayName: Publish JUnit test results
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFormat: JUnit
+              testResultsFiles: |
+                **/surefire-reports/TEST-*.xml
+                **/failsafe-reports/TEST-*.xml
+              searchFolder: '$(System.DefaultWorkingDirectory)'
+              mergeTestResults: true
+              failTaskOnFailedTests: true
+              failTaskOnMissingResultsFile: true
+              testRunTitle: 'Backend $(Build.BuildNumber)'
+
+          - bash: |
+              set -Eeuo pipefail
+              bash scripts/ci/mysql-flyway-smoke.sh
+            displayName: Validate Flyway V1-V7, Hibernate and OpenAPI on MySQL
+            env:
+              CI_MYSQL_IMAGE: '$(mysqlImage)'
+              CI_MYSQL_CONTAINER: 'lab-manager-ci-mysql-$(Build.BuildId)'
+              CI_API_PORT: '18082'
+              AGENT_TEMPDIRECTORY: '$(Agent.TempDirectory)'
+
+          - bash: |
+              set +e
+              if [[ -f "$(Agent.TempDirectory)/lab-manager-api.pid" ]]; then
+                api_pid="$(cat "$(Agent.TempDirectory)/lab-manager-api.pid")"
+                kill "${api_pid}" >/dev/null 2>&1 || true
+              fi
+              docker rm -f "lab-manager-ci-mysql-$(Build.BuildId)" >/dev/null 2>&1 || true
+              rm -f "$(Agent.TempDirectory)/lab-manager-api.pid"
+              rm -f "$(Agent.TempDirectory)/lab-manager-api.log"
+              rm -f "$(Agent.TempDirectory)/lab-manager-openapi.json"
+            displayName: Cleanup database smoke resources
+            condition: always()
+
+          - bash: |
+              set -Eeuo pipefail
+              plugin="com.github.spotbugs:spotbugs-maven-plugin:$(spotBugsVersion)"
+              ./mvnw -B -ntp \
+                -Dmaven.repo.local="$(mavenCacheFolder)" \
+                "${plugin}:spotbugs" \
+                -Dspotbugs.effort=Max \
+                -Dspotbugs.threshold=Default \
+                -Dspotbugs.xmlOutput=true \
+                -Dspotbugs.sarifOutput=true
+
+              find target -maxdepth 1 -type f \
+                \( -iname '*spotbugs*.xml' -o -iname '*spotbugs*.json' \) \
+                -exec cp {} "$(Build.ArtifactStagingDirectory)/security-reports/" \;
+            displayName: Generate SpotBugs reports
+
+          - bash: |
+              set -Eeuo pipefail
+              plugin="com.github.spotbugs:spotbugs-maven-plugin:$(spotBugsVersion)"
+              ./mvnw -B -ntp \
+                -Dmaven.repo.local="$(mavenCacheFolder)" \
+                "${plugin}:check" \
+                -Dspotbugs.effort=Max \
+                -Dspotbugs.threshold=High \
+                -Dspotbugs.failOnError=true \
+                -Dspotbugs.printBugs=true
+            displayName: Enforce SpotBugs gate
+
+          - task: Cache@2
+            displayName: Restore Trivy vulnerability database cache
+            inputs:
+              key: 'trivy | "$(Agent.OS)" | $(trivyVersion)'
+              restoreKeys: |
+                trivy | "$(Agent.OS)"
+              path: '$(trivyCacheFolder)'
+
+          - bash: |
+              set -Eeuo pipefail
+              version="$(trivyVersion)"
+              install_dir="$(Agent.ToolsDirectory)/trivy/${version}"
+              archive="$(Agent.TempDirectory)/trivy.tar.gz"
+              checksums="$(Agent.TempDirectory)/trivy-checksums.txt"
+              asset="trivy_${version}_Linux-64bit.tar.gz"
+
+              mkdir -p "${install_dir}"
+              curl --fail --silent --show-error --location \
+                "https://github.com/aquasecurity/trivy/releases/download/v${version}/${asset}" \
+                --output "${archive}"
+              curl --fail --silent --show-error --location \
+                "https://github.com/aquasecurity/trivy/releases/download/v${version}/trivy_${version}_checksums.txt" \
+                --output "${checksums}"
+
+              expected="$(awk -v asset="${asset}" '$2 == asset { print $1 }' "${checksums}")"
+              if [[ -z "${expected}" ]]; then
+                echo 'Trivy checksum was not found in the official checksum file.' >&2
+                exit 1
+              fi
+              printf '%s  %s\n' "${expected}" "${archive}" | sha256sum --check --status
+
+              tar -xzf "${archive}" -C "${install_dir}" trivy
+              chmod +x "${install_dir}/trivy"
+              rm -f "${archive}" "${checksums}"
+
+              echo "##vso[task.prependpath]${install_dir}"
+              "${install_dir}/trivy" --version \
+                | tee "$(Build.ArtifactStagingDirectory)/security-reports/trivy-version.txt"
+            displayName: Install and verify Trivy $(trivyVersion)
+
+          - bash: |
+              set -Eeuo pipefail
+              reports="$(Build.ArtifactStagingDirectory)/security-reports"
+
+              trivy fs \
+                --cache-dir "$(trivyCacheFolder)" \
+                --skip-version-check \
+                --disable-telemetry \
+                --offline-scan \
+                --scanners vuln \
+                --format json \
+                --output "${reports}/trivy-filesystem-vulnerabilities.json" \
+                .
+
+              trivy fs \
+                --cache-dir "$(trivyCacheFolder)" \
+                --skip-version-check \
+                --disable-telemetry \
+                --offline-scan \
+                --scanners vuln \
+                --severity HIGH,CRITICAL \
+                --ignore-unfixed \
+                --exit-code 1 \
+                .
+
+              trivy fs \
+                --cache-dir "$(trivyCacheFolder)" \
+                --skip-version-check \
+                --disable-telemetry \
+                --offline-scan \
+                --scanners secret \
+                --severity HIGH,CRITICAL \
+                --exit-code 1 \
+                .
+            displayName: Scan dependencies and repository secrets
+
+          - bash: |
+              set -Eeuo pipefail
+              short_sha="${BUILD_SOURCEVERSION:0:12}"
+              if [[ -z "${short_sha}" ]]; then
+                echo 'Build.SourceVersion is empty.' >&2
+                exit 1
+              fi
+              echo "##vso[task.setvariable variable=imageTagSha]${short_sha}"
+
+              docker build \
+                --label "org.opencontainers.image.revision=${BUILD_SOURCEVERSION}" \
+                --label "org.opencontainers.image.version=${BUILD_BUILDNUMBER}" \
+                --tag "$(imageName):$(Build.BuildId)" \
+                --tag "$(imageName):${short_sha}" \
+                .
+            displayName: Build traceable Docker image
+
+          - bash: |
+              set -Eeuo pipefail
+              reports="$(Build.ArtifactStagingDirectory)/security-reports"
+              image="$(imageName):$(Build.BuildId)"
+
+              trivy image \
+                --cache-dir "$(trivyCacheFolder)" \
+                --skip-version-check \
+                --disable-telemetry \
+                --offline-scan \
+                --scanners vuln \
+                --format json \
+                --output "${reports}/trivy-image-vulnerabilities.json" \
+                "${image}"
+
+              trivy image \
+                --cache-dir "$(trivyCacheFolder)" \
+                --skip-version-check \
+                --disable-telemetry \
+                --offline-scan \
+                --scanners vuln \
+                --severity HIGH,CRITICAL \
+                --ignore-unfixed \
+                --exit-code 1 \
+                "${image}"
+
+              trivy image \
+                --cache-dir "$(trivyCacheFolder)" \
+                --skip-version-check \
+                --disable-telemetry \
+                --offline-scan \
+                --scanners secret \
+                --severity HIGH,CRITICAL \
+                --exit-code 1 \
+                "${image}"
+            displayName: Scan Docker image
+
+          - bash: |
+              set -Eeuo pipefail
+              jar_dir="$(Build.ArtifactStagingDirectory)/backend-jar"
+              image_dir="$(Build.ArtifactStagingDirectory)/backend-image"
+              mkdir -p "${jar_dir}" "${image_dir}"
+
+              mapfile -t jars < <(find target -maxdepth 1 -type f -name '*.jar' | sort)
+              if [[ "${#jars[@]}" -ne 1 ]]; then
+                echo "Expected exactly one executable JAR; found ${#jars[@]}." >&2
+                exit 1
+              fi
+
+              cp "${jars[0]}" "${jar_dir}/lab-manager-api-$(Build.BuildId).jar"
+              printf 'buildId=%s\nbuildNumber=%s\ncommit=%s\n' \
+                "$(Build.BuildId)" "$(Build.BuildNumber)" "$(Build.SourceVersion)" \
+                > "${jar_dir}/build-info.txt"
+
+              image="$(imageName):$(Build.BuildId)"
+              docker image inspect "${image}" \
+                --format 'id={{.Id}}\nsize={{.Size}}\nrepoDigests={{json .RepoDigests}}' \
+                > "${image_dir}/image-metadata.txt"
+              printf 'buildId=%s\nbuildNumber=%s\ncommit=%s\nimage=%s\nshaTag=%s\n' \
+                "$(Build.BuildId)" "$(Build.BuildNumber)" "$(Build.SourceVersion)" \
+                "${image}" "$(imageTagSha)" \
+                >> "${image_dir}/image-metadata.txt"
+              docker save --output "${image_dir}/lab-manager-api-$(Build.BuildId).tar" \
+                "$(imageName):$(Build.BuildId)" "$(imageName):$(imageTagSha)"
+            displayName: Stage approved JAR and Docker image
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish backend JAR
+            inputs:
+              targetPath: '$(Build.ArtifactStagingDirectory)/backend-jar'
+              artifact: '$(jarArtifactName)'
+              publishLocation: pipeline
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish backend image
+            inputs:
+              targetPath: '$(Build.ArtifactStagingDirectory)/backend-image'
+              artifact: '$(imageArtifactName)'
+              publishLocation: pipeline
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish security reports
+            condition: succeededOrFailed()
+            inputs:
+              targetPath: '$(Build.ArtifactStagingDirectory)/security-reports'
+              artifact: '$(securityArtifactName)'
+              publishLocation: pipeline
+
+          - bash: |
+              set +e
+              docker image rm \
+                "$(imageName):$(Build.BuildId)" \
+                "$(imageName):$(imageTagSha)" \
+                >/dev/null 2>&1 || true
+              docker rm -f "lab-manager-ci-mysql-$(Build.BuildId)" >/dev/null 2>&1 || true
+              rm -f "$(Agent.TempDirectory)/lab-manager-api.pid"
+              rm -f "$(Agent.TempDirectory)/lab-manager-api.log"
+              rm -f "$(Agent.TempDirectory)/lab-manager-openapi.json"
+            displayName: Final cleanup
+            condition: always()
