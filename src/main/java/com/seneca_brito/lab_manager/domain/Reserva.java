@@ -1,11 +1,10 @@
 package com.seneca_brito.lab_manager.domain;
 
+import com.seneca_brito.lab_manager.shared.ENUM.StatusReserva;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-import org.springframework.data.annotation.CreatedDate;
-
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Objects;
@@ -30,6 +29,17 @@ public class Reserva {
 
     @Column(name = "horario_fim", nullable = false)
     private LocalTime horarioFim;
+
+    @Column(name = "quantidade_alunos")
+    private Integer quantidadeAlunos;
+
+    @Column(name = "observacao", columnDefinition = "TEXT")
+    private String observacao;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false,
+            columnDefinition = "ENUM('PENDENTE','APROVADA','REJEITADA','CANCELADA')")
+    private StatusReserva status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_id_usuario", nullable = false)

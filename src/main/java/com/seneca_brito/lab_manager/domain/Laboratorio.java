@@ -9,6 +9,7 @@ import org.hibernate.type.SqlTypes;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -30,6 +31,15 @@ public class Laboratorio {
 
     @Column(name = "quantidade_computadores", nullable = false)
     private Integer quantidadeComputadores;
+
+    @Column(name = "localizacao", length = 120)
+    private String localizacao;
+
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "laboratorio_recursos",
+            joinColumns = @JoinColumn(name = "laboratorio_id"))
+    @Column(name = "recurso", nullable = false, length = 100)
+    private Set<String> recursos;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, columnDefinition = "ENUM('DISPONIVEL','EM_USO','RESERVADO','EM_MANUTENCAO','INDISPONIVEL')")

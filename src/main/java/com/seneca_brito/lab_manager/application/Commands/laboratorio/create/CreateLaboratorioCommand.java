@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.URI;
 
 @RestController
-@RequestMapping("/laboratorios")
+@RequestMapping("/api/v1/laboratorios")
 @RequiredArgsConstructor
 public class CreateLaboratorioCommand {
 
@@ -28,6 +28,6 @@ public class CreateLaboratorioCommand {
         Laboratorio response = laboratorioHandler.create(laboratorio);
         String id = response.getId().toString();
 
-        return ResponseEntity.created(URI.create(id)).build();
+        return ResponseEntity.created(URI.create("/api/v1/laboratorios/" + id)).build();
     }
 }

@@ -4,6 +4,10 @@ import com.seneca_brito.lab_manager.shared.exceptions.errosDTOs.ErroCampo;
 import com.seneca_brito.lab_manager.shared.exceptions.errosDTOs.ErroResponse;
 import com.seneca_brito.lab_manager.shared.exceptions.RecursoNaoEncontradoException;
 import com.seneca_brito.lab_manager.shared.exceptions.RegistroDuplicadoException;
+import com.seneca_brito.lab_manager.shared.exceptions.ConflitoEstadoException;
+import com.seneca_brito.lab_manager.shared.exceptions.RegraNegocioException;
+import com.seneca_brito.lab_manager.shared.exceptions.UserNotAuthorizedException;
+import com.seneca_brito.lab_manager.shared.exceptions.RequisicaoInvalidaException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -46,6 +50,24 @@ public class GlobalExceptionHandler {
         return ErroResponse.of(HttpStatus.CONFLICT, e.getMessage());
     }
 
+    @ExceptionHandler(ConflitoEstadoException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErroResponse handleConflict(ConflitoEstadoException e) {
+        return ErroResponse.of(HttpStatus.CONFLICT, e.getMessage());
+    }
+
+    @ExceptionHandler(RegraNegocioException.class)
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_CONTENT)
+    public ErroResponse handleBusinessRule(RegraNegocioException e) {
+        return ErroResponse.of(HttpStatus.UNPROCESSABLE_CONTENT, e.getMessage());
+    }
+
+    @ExceptionHandler(UserNotAuthorizedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ErroResponse handleForbidden(UserNotAuthorizedException e) {
+        return ErroResponse.of(HttpStatus.FORBIDDEN, e.getMessage());
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErroResponse handleDataIntegrityViolation() {
@@ -57,5 +79,11 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErroResponse handleBadRequest() {
         return ErroResponse.of(HttpStatus.BAD_REQUEST, "Requisicao invalida");
+    }
+
+    @ExceptionHandler(RequisicaoInvalidaException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErroResponse handleInvalidRequest(RequisicaoInvalidaException e) {
+        return ErroResponse.of(HttpStatus.BAD_REQUEST, e.getMessage());
     }
 }

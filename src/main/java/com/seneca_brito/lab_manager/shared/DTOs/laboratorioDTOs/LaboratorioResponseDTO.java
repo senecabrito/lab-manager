@@ -4,6 +4,7 @@ import com.seneca_brito.lab_manager.shared.ENUM.StatusLaboratorio;
 import com.seneca_brito.lab_manager.shared.ENUM.TipoLaboratorio;
 
 import java.util.UUID;
+import java.util.Set;
 
 public record LaboratorioResponseDTO(
         UUID id,
@@ -11,6 +12,8 @@ public record LaboratorioResponseDTO(
         Integer capacidade,
         Integer quantidadeComputadores,
         StatusLaboratorio status,
-        TipoLaboratorio tipoLaboratorio
+        TipoLaboratorio tipoLaboratorio,
+        String localizacao,
+        Set<String> recursos
 ) {
 }

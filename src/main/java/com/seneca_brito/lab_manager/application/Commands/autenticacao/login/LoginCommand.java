@@ -18,7 +18,7 @@ public class LoginCommand {
     private final LoginHandler loginHandler;
 
     @PostMapping("/login")
-    public ResponseEntity<TokenResponseDTO> login(@RequestBody @Valid LoginDTO dto) throws Exception {
+    public ResponseEntity<TokenResponseDTO> login(@RequestBody @Valid LoginDTO dto) {
         TokenResponseDTO token = loginHandler.login(dto);
 
         return ResponseEntity.ok().body(token);

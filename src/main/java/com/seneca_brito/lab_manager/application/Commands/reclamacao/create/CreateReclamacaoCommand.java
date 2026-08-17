@@ -2,7 +2,6 @@ package com.seneca_brito.lab_manager.application.Commands.reclamacao.create;
 
 import com.seneca_brito.lab_manager.domain.Reclamacao;
 import com.seneca_brito.lab_manager.shared.DTOs.reclamacaoDTOs.ReclamacaoRequestDTO;
-import com.seneca_brito.lab_manager.shared.mappers.ReclamacaoMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -10,24 +9,23 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
 
 import java.net.URI;
 
 @RestController
-@RequestMapping("/reclamacoes")
+@RequestMapping("/api/v1/reclamacoes")
 @RequiredArgsConstructor
 public class CreateReclamacaoCommand {
 
     private final CreateReclamacaoHandler reclamacaoHandler;
-    private final ReclamacaoMapper  reclamacaoMapper;
 
     @PostMapping
-    public ResponseEntity<Void> createReserva(@RequestBody @Valid ReclamacaoRequestDTO reclamacaoDTO){
-        Reclamacao reclamacao = reclamacaoMapper.toModel(reclamacaoDTO);
-
-        Reclamacao response = reclamacaoHandler.create(reclamacao);
+    public ResponseEntity<Void> createReclamacao(@RequestBody @Valid ReclamacaoRequestDTO reclamacaoDTO,
+                                                  Authentication authentication){
+        Reclamacao response = reclamacaoHandler.create(reclamacaoDTO, authentication.getName());
         String idReclamacao = response.getId().toString();
 
-        return ResponseEntity.created(URI.create(idReclamacao)).build();
+        return ResponseEntity.created(URI.create("/api/v1/reclamacoes/" + idReclamacao)).build();
     }
 }

@@ -5,6 +5,9 @@ import com.seneca_brito.lab_manager.infrastructure.repositories.LaboratorioRepos
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashSet;
+import java.util.Locale;
+
 @Service
 @RequiredArgsConstructor
 public class CreateLaboratorioHandler {
@@ -13,6 +16,24 @@ public class CreateLaboratorioHandler {
 
 
     public Laboratorio create(Laboratorio laboratorio) {
-        return laboratorioRepository.save(laboratorio);
+        laboratorio.setLocalizacao(normalizeOptional(laboratorio.getLocalizacao()));
+        laboratorio.setRecursos(normalizeResources(laboratorio.getRecursos()));
+        return laboratorioRepository.saveAndFlush(laboratorio);
+    }
+
+    public static LinkedHashSet<String> normalizeResources(Iterable<String> recursos) {
+        LinkedHashSet<String> normalized = new LinkedHashSet<>();
+        if (recursos != null) {
+            recursos.forEach(recurso -> normalized.add(recurso.trim().toUpperCase(Locale.ROOT)));
+        }
+        return normalized;
+    }
+
+    public static String normalizeOptional(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 }
