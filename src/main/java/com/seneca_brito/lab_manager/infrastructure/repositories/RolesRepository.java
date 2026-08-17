@@ -1,6 +1,6 @@
 package com.seneca_brito.lab_manager.infrastructure.repositories;
 
-import com.seneca_brito.lab_manager.domain.Usuario;
+import com.seneca_brito.lab_manager.infrastructure.security.RolesEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -8,10 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
+public interface RolesRepository extends JpaRepository<RolesEntity, UUID> {
 
-    Optional<Usuario> findByEmail(String email);
-
-    boolean existsByEmail(String email);
-
+    Optional<RolesEntity> findByNome(String Nome);
 }
