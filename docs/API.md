@@ -1,7 +1,7 @@
 # API do Lab Manager
 
-Esta documentação cobre os módulos de laboratórios, calendário, reservas, aprovação,
-reclamações, dashboard e relatórios. Todas as rotas abaixo usam o prefixo `/api/v1` e,
+Esta documentação cobre os módulos de laboratórios, calendário, reservas, recomendação,
+inventário, acessos, reclamações, dashboard e relatórios. Todas as rotas abaixo usam o prefixo `/api/v1` e,
 salvo login/cadastro, exigem `Authorization: Bearer <token>`.
 
 ## Contrato oficial e interface interativa
@@ -11,8 +11,8 @@ O contrato oficial é gerado a partir da aplicação em execução com OpenAPI 3
 - JSON: `GET /v3/api-docs`;
 - Swagger UI: `GET /swagger-ui/index.html`.
 
-Na versão homologada pela T27, o documento contém 23 caminhos, 34 operações e 30
-schemas em `components.schemas`.
+Depois da inclusão dos módulos funcionais complementares, o documento contém 31
+caminhos, 45 operações e 39 schemas em `components.schemas`.
 
 Essas duas rotas de documentação são públicas. O esquema `bearerAuth` representa o JWT
 enviado em `Authorization: Bearer <token>`. No Swagger UI, use **Authorize** depois do
@@ -70,7 +70,7 @@ na query representam condição **E**: o laboratório precisa possuir todos eles
 capacidade é comparada por `>=`; localização não diferencia maiúsculas/minúsculas.
 Também são aceitos os parâmetros padrão de página `page`, `size` e `sort`.
 
-Listagens paginadas de usuários, laboratórios, reservas e reclamações usam o formato
+Listagens paginadas de usuários, laboratórios, reservas, inventário, acessos e reclamações usam o formato
 real do `PagedModel`:
 
 ```json
@@ -118,6 +118,7 @@ Um dia livre contém 21 slots de 30 minutos, de `07:30` a `18:00`.
 | `PATCH /reservas/{id}/cancelamento` | Dono ou administração | Cancela |
 | `PATCH /reservas/{id}/aprovacao` | Administração | Aprova uma pendente |
 | `PATCH /reservas/{id}/rejeicao` | Administração | Rejeita uma pendente |
+| `POST /reservas/recomendacoes` | Autenticado | Recomenda combinações disponíveis de laboratório e horário |
 
 Filtros de listagem: `laboratorioId`, `data` e `status`, além de paginação. Corpo de
 criação:
@@ -142,6 +143,55 @@ A criação, alteração de horário/laboratório e aprovação usam transação
 conflito. Isso serializa decisões concorrentes e garante uma leitura atual depois da
 espera pelo bloqueio, inclusive quando ainda não existe reserva na faixa. Um conflito
 de horário responde `409` e não persiste uma segunda reserva.
+
+### Recomendação de reserva
+
+`POST /reservas/recomendacoes` recebe `data`, `horarioPreferencial` opcional,
+`duracaoMinutos`, `quantidadeAlunos`, `recursos`, `localizacao` e `laboratorioId`
+opcionais. O endpoint usa os mesmos filtros de laboratório, `ReservaPolicy`,
+`ReservaSettings`, granularidade, antecedência e estados bloqueadores da criação de
+reservas. Uma recomendação não dispensa a revalidação transacional ao reservar.
+
+As opções são ordenadas por menor capacidade suficiente, proximidade do horário
+preferido, nome, UUID do laboratório e início. Resultado sem opções retorna `200` com
+`recomendacoes: []`; nenhuma reserva existente ou dado pessoal é exposto.
+
+## Inventário
+
+Cada item possui `id`, `nome`, `quantidadeDisponivel`, `quantidadeIndisponivel` e uma
+FK obrigatória para `Laboratorio`. O frontend auditado não sustenta descrição, código
+patrimonial ou status adicional, por isso esses campos não fazem parte do modelo.
+
+| Método e rota | Acesso | Descrição |
+| --- | --- | --- |
+| `POST /inventario` | Administração | Cria item e retorna `201` + `Location` |
+| `GET /inventario` | Autenticado | Lista com paginação e filtro `laboratorioId` |
+| `GET /inventario/{id}` | Autenticado | Detalha item |
+| `PATCH /inventario/{id}` | Administração | Atualiza parcialmente |
+| `DELETE /inventario/{id}` | Administração | Exclui item |
+
+Quantidades são inteiras não negativas. A criação ou troca para laboratório
+inexistente retorna `404`; violação de integridade retorna `409`.
+
+## Check-in, check-out e histórico
+
+O acesso é orientado à reserva e persiste somente a FK única da reserva, os instantes
+UTC de check-in/check-out e o estado `EM_ANDAMENTO` ou `FINALIZADO`. Usuário e
+laboratório são derivados da reserva; o cliente nunca escolhe `usuarioId`.
+
+| Método e rota | Acesso | Descrição |
+| --- | --- | --- |
+| `POST /reservas/{reservaId}/check-in` | Dono ou administração | Registra uso de reserva `APROVADA` durante `[início, fim)` |
+| `POST /reservas/{reservaId}/check-out` | Dono ou administração | Finaliza um check-in aberto |
+| `GET /acessos` | Administração | Histórico global paginado |
+| `GET /acessos/me` | Autenticado | Histórico do usuário do JWT |
+| `GET /acessos/{id}` | Dono ou administração | Detalha um acesso |
+
+O histórico aceita filtros `reservaId`, `laboratorioId` e `status`. Check-in duplicado,
+check-out sem check-in e check-out duplicado retornam `409`. Estado de reserva ou
+janela temporal incompatíveis retornam `422`. Não foi inventada tolerância antes ou
+depois da reserva. A métrica da T26 permanece baseada em reservas `APROVADA`; os novos
+registros não alteram dashboard ou relatórios.
 
 ## Reclamações
 
@@ -190,7 +240,8 @@ por nome e UUID para manter ordem estável.
 
 ## Respostas e erros
 
-Criações retornam `201 Created` e cabeçalho `Location`; leituras/alterações retornam
+Criações retornam `201 Created` e cabeçalho `Location`; o check-in também retorna seu
+`AcessoResponseDTO`. Leituras/alterações retornam
 `200 OK`; exclusões físicas de usuário e laboratório retornam `204 No Content`, sem
 `Content-Type` e sem corpo.
 
@@ -249,6 +300,11 @@ não foram compensadas com aliases ou alterações de regra no backend.
 | Criar reserva | `ReservaRequestDTO` | `201` + `Location` |
 | Atualizar reserva | `ReservaUpdateDTO` | `ReservaResponseDTO` |
 | Consultar/cancelar/aprovar/rejeitar reserva | Query/path | `PagedModel<ReservaResponseDTO>` ou `ReservaResponseDTO` |
+| Recomendar reserva | `RecomendacaoReservaRequestDTO` | `RecomendacaoReservaResponseDTO` |
+| Criar/atualizar inventário | `InventarioRequestDTO` / `InventarioUpdateDTO` | `201` + `Location` / `InventarioResponseDTO` |
+| Consultar inventário | Query/path | `PagedModel<InventarioResponseDTO>` / `InventarioResponseDTO` |
+| Check-in/check-out | Path da reserva | `AcessoResponseDTO` |
+| Consultar acessos | Query/path | `PagedModel<AcessoResponseDTO>` / `AcessoResponseDTO` |
 | Criar reclamação | `ReclamacaoRequestDTO` | `201` + `Location` |
 | Atualizar reclamação | `ReclamacaoUpdateDTO` | `ReclamacaoResponseDTO` |
 | Atualizar status da reclamação | `ReclamacaoStatusUpdateDTO` | `ReclamacaoResponseDTO` |
@@ -262,4 +318,7 @@ não foram compensadas com aliases ou alterações de regra no backend.
 `V5__support_scheduling_and_laboratory_filters.sql` adiciona localização e recursos aos
 laboratórios, dados e status às reservas e índices de agenda/relatórios. Reservas já
 existentes são retrocompatibilizadas como `APROVADA`, preservando a ocupação que antes
-era implícita. As migrações `V1` a `V4` permanecem inalteradas.
+era implícita. `V6__create_inventory.sql` cria o inventário e sua FK/índice por
+laboratório e nome. `V7__create_access_registry.sql` cria o registro de acesso, a FK
+única de reserva e o índice por instante de check-in. As migrações `V1` a `V5`
+permanecem inalteradas.

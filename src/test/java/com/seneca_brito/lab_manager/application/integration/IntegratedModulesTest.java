@@ -62,6 +62,8 @@ class IntegratedModulesTest {
     @Autowired LaboratorioRepository laboratorioRepository;
     @Autowired ReservaRepository reservaRepository;
     @Autowired ReclamacaoRepository reclamacaoRepository;
+    @Autowired InventarioRepository inventarioRepository;
+    @Autowired RegistroAcessoRepository acessoRepository;
     @Autowired CreateReservaHandler createReservaHandler;
     @Autowired ReservaStatusHandler reservaStatusHandler;
 
@@ -73,6 +75,8 @@ class IntegratedModulesTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        acessoRepository.deleteAll();
+        inventarioRepository.deleteAll();
         reclamacaoRepository.deleteAll();
         reservaRepository.deleteAll();
         laboratorioRepository.deleteAll();
@@ -286,6 +290,184 @@ class IntegratedModulesTest {
     }
 
     @Test
+    void recommendationUsesCurrentLaboratoryFiltersAndReservationAvailability() throws Exception {
+        UUID labId = createLaboratory("Lab Recomendado");
+        createReservation(labId, "10:00", "11:00", usuarioToken);
+
+        String response = mockMvc.perform(post("/api/v1/reservas/recomendacoes")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(usuarioToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"data\":\"" + reservationDate + "\","
+                                + "\"horarioPreferencial\":\"10:00\",\"duracaoMinutos\":60,"
+                                + "\"quantidadeAlunos\":30,\"recursos\":[\"projetor\"],"
+                                + "\"localizacao\":\"bloco\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.timezone").value("America/Sao_Paulo"))
+                .andExpect(jsonPath("$.recomendacoes[0].laboratorioId").value(labId.toString()))
+                .andExpect(jsonPath("$.recomendacoes[0].inicio").value("09:00:00"))
+                .andReturn().getResponse().getContentAsString();
+        assertFalse(response.contains(usuario.getEmail()));
+        assertFalse(response.contains(usuario.getId().toString()));
+
+        mockMvc.perform(post("/api/v1/reservas/recomendacoes")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(usuarioToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"data\":\"" + reservationDate + "\",\"duracaoMinutos\":45,"
+                                + "\"quantidadeAlunos\":30}"))
+                .andExpect(status().isUnprocessableContent());
+        mockMvc.perform(post("/api/v1/reservas/recomendacoes")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(usuarioToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"data\":\"" + reservationDate + "\",\"duracaoMinutos\":30,"
+                                + "\"quantidadeAlunos\":41}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.recomendacoes.length()").value(0));
+    }
+
+    @Test
+    void inventoryCrudEnforcesAuthorizationValidationAndRelationships() throws Exception {
+        UUID labId = createLaboratory("Lab Inventario");
+        String body = "{\"nome\":\"Teclado\",\"quantidadeDisponivel\":12,"
+                + "\"quantidadeIndisponivel\":2,\"laboratorioId\":\"" + labId + "\"}";
+        mockMvc.perform(post("/api/v1/inventario")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(usuarioToken))
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isForbidden());
+        MvcResult created = mockMvc.perform(post("/api/v1/inventario")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isCreated()).andReturn();
+        UUID itemId = locationId(created);
+
+        mockMvc.perform(get("/api/v1/inventario")
+                        .param("laboratorioId", labId.toString())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(usuarioToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].nome").value("Teclado"));
+        mockMvc.perform(get("/api/v1/inventario/{id}", itemId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(usuarioToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.laboratorioId").value(labId.toString()));
+        mockMvc.perform(patch("/api/v1/inventario/{id}", itemId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quantidadeDisponivel\":10,\"quantidadeIndisponivel\":4}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.quantidadeDisponivel").value(10));
+
+        mockMvc.perform(delete("/api/v1/laboratorios/{id}", labId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isConflict());
+        mockMvc.perform(post("/api/v1/inventario")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body.replace("\"quantidadeDisponivel\":12", "\"quantidadeDisponivel\":-1")))
+                .andExpect(status().isUnprocessableContent());
+        mockMvc.perform(post("/api/v1/inventario")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body.replace(labId.toString(), UUID.randomUUID().toString())))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(delete("/api/v1/inventario/{id}", itemId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/v1/inventario/{id}", itemId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(usuarioToken)))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(delete("/api/v1/inventario/{id}", UUID.randomUUID())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void checkInOutAndHistoryEnforceOwnershipStateUniquenessAndJwtIdentity() throws Exception {
+        UUID labId = createLaboratory("Lab Acesso");
+        Laboratorio lab = laboratorioRepository.findById(labId).orElseThrow();
+        Reserva approved = directReservation(lab, usuario, StatusReserva.APROVADA);
+        RolesEntity userRole = rolesRepository.findByNome(RoleTypeEnum.USUARIO.name()).orElseThrow();
+        Usuario other = usuarioRepository.saveAndFlush(user("other@integration.test", "OTH-I",
+                TipoDeUsuarios.PROF, Set.of(userRole)));
+        String otherToken = login(other.getEmail());
+
+        mockMvc.perform(post("/api/v1/reservas/{id}/check-in", UUID.randomUUID())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(usuarioToken)))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(post("/api/v1/reservas/{id}/check-in", approved.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(otherToken)))
+                .andExpect(status().isForbidden());
+
+        for (StatusReserva invalid : List.of(StatusReserva.PENDENTE, StatusReserva.REJEITADA,
+                StatusReserva.CANCELADA)) {
+            Reserva invalidReservation = directReservation(lab, usuario, invalid);
+            mockMvc.perform(post("/api/v1/reservas/{id}/check-in", invalidReservation.getId())
+                            .header(HttpHeaders.AUTHORIZATION, bearer(usuarioToken)))
+                    .andExpect(status().isUnprocessableContent());
+        }
+
+        MvcResult checkIn = mockMvc.perform(post("/api/v1/reservas/{id}/check-in", approved.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(usuarioToken)))
+                .andExpect(status().isCreated())
+                .andExpect(header().exists(HttpHeaders.LOCATION))
+                .andExpect(jsonPath("$.reservaId").value(approved.getId().toString()))
+                .andExpect(jsonPath("$.usuarioId").value(usuario.getId().toString()))
+                .andExpect(jsonPath("$.status").value("EM_ANDAMENTO"))
+                .andReturn();
+        UUID accessId = objectMapper.readTree(checkIn.getResponse().getContentAsString()).get("id").asText().transform(UUID::fromString);
+        mockMvc.perform(post("/api/v1/reservas/{id}/check-in", approved.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(usuarioToken)))
+                .andExpect(status().isConflict());
+
+        Reserva withoutCheckIn = directReservation(lab, usuario, StatusReserva.APROVADA);
+        mockMvc.perform(post("/api/v1/reservas/{id}/check-out", withoutCheckIn.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(usuarioToken)))
+                .andExpect(status().isConflict());
+        mockMvc.perform(post("/api/v1/reservas/{id}/check-out", approved.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(otherToken)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/v1/reservas/{id}/check-out", approved.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(usuarioToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("FINALIZADO"))
+                .andExpect(jsonPath("$.checkOut").exists());
+        mockMvc.perform(post("/api/v1/reservas/{id}/check-out", approved.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(usuarioToken)))
+                .andExpect(status().isConflict());
+
+        RegistroAcesso persisted = acessoRepository.findDetailedById(accessId).orElseThrow();
+        assertFalse(persisted.getCheckOut().isBefore(persisted.getCheckIn()));
+        assertEquals(usuario.getId(), persisted.getReserva().getUsuario().getId());
+
+        Reserva adminReservation = directReservation(lab, admin, StatusReserva.APROVADA);
+        mockMvc.perform(post("/api/v1/reservas/{id}/check-in", adminReservation.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isCreated());
+        mockMvc.perform(get("/api/v1/acessos")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(usuarioToken)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/acessos")
+                        .param("laboratorioId", labId.toString()).param("size", "1")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.page.totalElements").value(2));
+        mockMvc.perform(get("/api/v1/acessos/me")
+                        .param("status", "FINALIZADO")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(usuarioToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].usuarioId").value(usuario.getId().toString()))
+                .andExpect(jsonPath("$.content[0].senha").doesNotExist());
+        mockMvc.perform(get("/api/v1/acessos/{id}", accessId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(otherToken)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/acessos/{id}", accessId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(usuarioToken)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void simultaneousConflictingOperationsPersistOnlyOneWinner() throws Exception {
         UUID labId = createLaboratory("Lab Concorrente");
         ReservaRequestDTO dto = new ReservaRequestDTO(reservationDate, LocalTime.of(14, 0),
@@ -363,6 +545,19 @@ class IntegratedModulesTest {
         reserva.setUsuario(usuario);
         reserva.setLaboratorio(laboratorio);
         return reserva;
+    }
+
+    private Reserva directReservation(Laboratorio laboratorio, Usuario owner, StatusReserva status) {
+        Reserva reserva = new Reserva();
+        reserva.setDataReserva(LocalDate.now(ZoneId.of("America/Sao_Paulo")));
+        reserva.setHorarioInicio(LocalTime.MIN);
+        reserva.setHorarioFim(LocalTime.of(23, 59, 59));
+        reserva.setQuantidadeAlunos(1);
+        reserva.setObservacao("Acesso integrado");
+        reserva.setStatus(status);
+        reserva.setUsuario(owner);
+        reserva.setLaboratorio(laboratorio);
+        return reservaRepository.saveAndFlush(reserva);
     }
 
     private UUID createLaboratory(String nome) throws Exception {

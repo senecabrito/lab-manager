@@ -32,11 +32,17 @@ class OpenApiContractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.info.title").value("LabManager API"))
                 .andExpect(jsonPath("$.info.version").value("v1"))
-                .andExpect(jsonPath("$.paths", aMapWithSize(23)))
+                .andExpect(jsonPath("$.paths", aMapWithSize(31)))
                 .andExpect(jsonPath("$.paths['/api/v1/autenticacao/login'].post").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/usuarios/me'].get").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/laboratorios/{id}/calendario'].get").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/reservas/{id}/aprovacao'].patch").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/reservas/recomendacoes'].post").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/inventario'].get").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/inventario/{id}'].patch").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/reservas/{reservaId}/check-in'].post").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/reservas/{reservaId}/check-out'].post").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/acessos/me'].get").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/reclamacoes/{id}/status'].patch").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/relatorios/ranking-laboratorios'].get").exists())
                 .andExpect(jsonPath("$.components.securitySchemes.bearerAuth.type").value("http"))
@@ -45,7 +51,7 @@ class OpenApiContractIntegrationTest {
                 .andReturn();
 
         List<?> operations = JsonPath.read(result.getResponse().getContentAsString(), "$.paths.*.*");
-        assertEquals(34, operations.size());
+        assertEquals(45, operations.size());
     }
 
     @Test
@@ -70,7 +76,14 @@ class OpenApiContractIntegrationTest {
                 .andExpect(jsonPath("$.components.schemas.ErroResponse.required", hasItem("status")))
                 .andExpect(jsonPath("$.components.schemas.ErroResponse.required", hasItem("message")))
                 .andExpect(jsonPath("$.components.schemas.ErroResponse.required", hasItem("erro")))
-                .andExpect(jsonPath("$.components.schemas", aMapWithSize(30)))
+                .andExpect(jsonPath("$.components.schemas", aMapWithSize(39)))
+                .andExpect(jsonPath("$.components.schemas.RecomendacaoReservaRequestDTO").exists())
+                .andExpect(jsonPath("$.components.schemas.RecomendacaoReservaResponseDTO").exists())
+                .andExpect(jsonPath("$.components.schemas.InventarioRequestDTO").exists())
+                .andExpect(jsonPath("$.components.schemas.InventarioResponseDTO").exists())
+                .andExpect(jsonPath("$.components.schemas.AcessoResponseDTO").exists())
+                .andExpect(jsonPath("$.components.schemas.RegistroAcesso").doesNotExist())
+                .andExpect(jsonPath("$.components.schemas.InventarioItem").doesNotExist())
                 .andExpect(jsonPath("$.components.schemas.ReservaResponseDTO.properties.status.enum", hasItem("APROVADA")))
                 .andExpect(jsonPath("$.components.schemas.CalendarioResponseDTO.properties.data.format").value("date"))
                 .andExpect(jsonPath("$.components.schemas.CalendarioSlotDTO.properties.inicio.format").value("time"))
@@ -81,6 +94,15 @@ class OpenApiContractIntegrationTest {
                         .value("Usuario excluido; resposta sem corpo"))
                 .andExpect(jsonPath("$.paths['/api/v1/usuarios/{id}'].delete.responses.204.content").doesNotExist())
                 .andExpect(jsonPath("$.paths['/api/v1/laboratorios'].post.responses.201.headers.Location").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/reservas/{reservaId}/check-in'].post.responses.201.headers.Location").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/reservas/{reservaId}/check-in'].post.responses.201.content.application/json.schema.$ref").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/reservas/recomendacoes'].post.security[0].bearerAuth").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/inventario'].post.responses.403.$ref")
+                        .value("#/components/responses/Forbidden"))
+                .andExpect(jsonPath("$.paths['/api/v1/reservas/{reservaId}/check-in'].post.responses.409.$ref")
+                        .value("#/components/responses/Conflict"))
+                .andExpect(jsonPath("$.paths['/api/v1/reservas/{reservaId}/check-in'].post.responses.422.$ref")
+                        .value("#/components/responses/UnprocessableEntity"))
                 .andExpect(jsonPath("$.components.responses.InternalServerError.content.application/json.schema.$ref")
                         .value("#/components/schemas/ErroResponse"));
     }

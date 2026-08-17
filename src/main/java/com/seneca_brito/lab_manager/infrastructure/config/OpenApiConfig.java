@@ -75,6 +75,9 @@ public class OpenApiConfig {
                         new Tag().name("Laboratorios"),
                         new Tag().name("Calendario"),
                         new Tag().name("Reservas"),
+                        new Tag().name("Recomendacoes"),
+                        new Tag().name("Inventario"),
+                        new Tag().name("Acessos"),
                         new Tag().name("Reclamacoes"),
                         new Tag().name("Dashboard e relatorios")
                 ));
@@ -127,7 +130,6 @@ public class OpenApiConfig {
             response.addHeaderObject("Location", new Header()
                     .description("URI do recurso criado")
                     .schema(new StringSchema().format("uri")));
-            return response;
         }
         if (contract.successStatus() == 204) {
             return response;
@@ -214,6 +216,30 @@ public class OpenApiConfig {
                 "somente ADMINISTRACAO", false, 200, "Reserva aprovada", 400, 401, 403, 404, 409, 422, 500);
         add(contracts, "PATCH", "/api/v1/reservas/{id}/rejeicao", "Rejeitar reserva", "Reservas",
                 "somente ADMINISTRACAO", false, 200, "Reserva rejeitada", 400, 401, 403, 404, 409, 422, 500);
+        add(contracts, "POST", "/api/v1/reservas/recomendacoes", "Recomendar horarios e laboratorios", "Recomendacoes",
+                "qualquer usuario autenticado", false, 200, "Opcoes compativeis e disponiveis, em ordem deterministica", 400, 401, 404, 422, 500);
+        add(contracts, "POST", "/api/v1/reservas/{reservaId}/check-in", "Registrar check-in", "Acessos",
+                "proprietario da reserva ou ADMINISTRACAO", false, 201, "Check-in registrado e retornado", 400, 401, 403, 404, 409, 422, 500);
+        add(contracts, "POST", "/api/v1/reservas/{reservaId}/check-out", "Registrar check-out", "Acessos",
+                "proprietario da reserva ou ADMINISTRACAO", false, 200, "Check-out registrado", 400, 401, 403, 404, 409, 422, 500);
+
+        add(contracts, "GET", "/api/v1/inventario", "Listar itens do inventario", "Inventario",
+                "qualquer usuario autenticado", false, 200, "Pagina de itens em formato PagedModel", 400, 401, 500);
+        add(contracts, "POST", "/api/v1/inventario", "Criar item do inventario", "Inventario",
+                "somente ADMINISTRACAO", false, 201, "Item criado; resposta sem corpo", 400, 401, 403, 404, 409, 422, 500);
+        add(contracts, "GET", "/api/v1/inventario/{id}", "Detalhar item do inventario", "Inventario",
+                "qualquer usuario autenticado", false, 200, "Item encontrado", 400, 401, 404, 500);
+        add(contracts, "PATCH", "/api/v1/inventario/{id}", "Atualizar item do inventario", "Inventario",
+                "somente ADMINISTRACAO", false, 200, "Item atualizado", 400, 401, 403, 404, 409, 422, 500);
+        add(contracts, "DELETE", "/api/v1/inventario/{id}", "Excluir item do inventario", "Inventario",
+                "somente ADMINISTRACAO", false, 204, "Item excluido; resposta sem corpo", 400, 401, 403, 404, 409, 500);
+
+        add(contracts, "GET", "/api/v1/acessos", "Listar historico de acessos", "Acessos",
+                "somente ADMINISTRACAO", false, 200, "Pagina de acessos em formato PagedModel", 400, 401, 403, 500);
+        add(contracts, "GET", "/api/v1/acessos/me", "Listar proprio historico de acessos", "Acessos",
+                "qualquer usuario autenticado", false, 200, "Pagina dos acessos do usuario autenticado", 400, 401, 500);
+        add(contracts, "GET", "/api/v1/acessos/{id}", "Detalhar acesso", "Acessos",
+                "proprietario da reserva ou ADMINISTRACAO", false, 200, "Acesso encontrado", 400, 401, 403, 404, 500);
 
         add(contracts, "GET", "/api/v1/reclamacoes", "Listar todas as reclamacoes", "Reclamacoes",
                 "somente ADMINISTRACAO", false, 200, "Pagina de reclamacoes em formato PagedModel", 400, 401, 403, 500);

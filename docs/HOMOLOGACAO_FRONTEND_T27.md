@@ -6,6 +6,25 @@ O repositório `../lab-manager-frontend` foi inspecionado em modo somente leitur
 fonte de verdade do backend é `GET /v3/api-docs`; o arquivo `openapi.yaml` do frontend
 descreve um contrato anterior e não corresponde à API `/api/v1` atual.
 
+## Auditoria A/B/C/D após a complementação funcional
+
+| Fluxo frontend | Chamada atual | Situação backend | Classe | Decisão |
+| --- | --- | --- | --- | --- |
+| Login | `POST /autenticacao/login` com matrícula | Login oficial por email e senha | A | Manter backend; migrar payload e prefixo no frontend |
+| Logout | `POST /autenticacao/logout` | JWT stateless não mantém sessão de servidor | D | Remover chamada e limpar token no cliente |
+| Perfil | GET/PUT `/autenticacao/perfil` | GET/PATCH `/api/v1/usuarios/me` | C | Consumir equivalente oficial |
+| Usuários | `GET /usuarios` e envelopes antigos | CRUD oficial paginado, com listagem mínima B03 | C | Adaptar `PagedModel` e DTOs |
+| Laboratórios | CRUD `/labs` com PUT | CRUD `/api/v1/laboratorios` com PATCH | C | Migrar rota, verbo e DTO |
+| Calendário | `GET /calendario` global | Calendário por laboratório | C | Selecionar laboratório e usar rota oficial |
+| Reservas | CRUD antigo e GET global para professor | CRUD oficial, `/me` e ações de estado | C | Migrar rotas, verbos, campos e paginação |
+| Aprovação | sufixos `/aprovar` e `/rejeitar` | `/aprovacao` e `/rejeicao` | A | Migrar sufixos no frontend |
+| Reclamações | CRUD `/problemas` | CRUD/estado `/api/v1/reclamacoes` | C | Consumir equivalente oficial |
+| Dashboard/relatórios | rotas e envelopes antigos | dashboard e três relatórios oficiais | C | Migrar parâmetros, rotas e respostas |
+| Recomendação | `GET /reservas/recomendacao` sem critérios | `POST /api/v1/reservas/recomendacoes` estruturado | B | Funcionalidade implementada; migrar frontend |
+| Inventário | `GET /inventario` | CRUD `/api/v1/inventario` | B | Funcionalidade implementada; migrar DTO/paginação |
+| Check-in/out | `POST /acessos/{tipo}` com `labId` | ações orientadas por reserva e histórico | B | Funcionalidade implementada; enviar `reservaId` na rota |
+| Loading/vazio/erros visuais | estado local incompleto | Não é responsabilidade HTTP do backend | D | Implementar exclusivamente no frontend |
+
 ## Classificação por fluxo
 
 | Fluxo/tela | Classificação | Evidência e pendência |
@@ -46,12 +65,14 @@ Classificação: **DIVERGÊNCIA NO FRONTEND**.
 Carregamento e estado vazio são responsabilidades do frontend e nenhuma mudança foi
 feita no backend para mascarar sua ausência.
 
-## Funcionalidades fora do contrato atual
+## Funcionalidades adicionadas depois da T27
 
 As telas ainda chamam `/reservas/recomendacao`, `/inventario`, `/acessos/checkin` e
-`/acessos/checkout`. Essas rotas não existem no backend auditado. Classificação:
-**DIVERGÊNCIA NO BACKEND em relação às telas legadas**, sem implementação na T27 por
-estarem fora do contrato consolidado e exigirem novas regras de negócio.
+`/acessos/checkout`. Recomendação, inventário e acesso foram confirmados como requisitos
+reais e agora existem no contrato oficial em `POST /reservas/recomendacoes`, CRUD de
+`/inventario`, `POST /reservas/{reservaId}/check-in`,
+`POST /reservas/{reservaId}/check-out` e consultas de `/acessos`. As chamadas e DTOs
+antigos continuam classificados como divergência do frontend; nenhum alias foi criado.
 
 ## Ações pendentes no frontend
 
@@ -61,4 +82,5 @@ estarem fora do contrato consolidado e exigirem novas regras de negócio.
 4. Obter o perfil em `/usuarios/me` depois do login, pois o token não inclui objeto
    `usuario` na resposta HTTP.
 5. Implementar estados de carregamento, vazio e erro por tela.
-6. Decidir em tarefa própria o destino das telas de recomendação, inventário e acesso.
+6. Migrar recomendação, inventário e acesso para os novos contratos oficiais orientados
+   à reserva e para seus DTOs/paginação.
