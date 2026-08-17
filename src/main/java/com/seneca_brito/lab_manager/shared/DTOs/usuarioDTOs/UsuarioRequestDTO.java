@@ -24,6 +24,10 @@ public record UsuarioRequestDTO(
 
         @NotBlank(message = "Campo obrigatorio")
         @Size(min = 5, max = 50, message = "curso deve ter entre 5 e 50 caracteres")
-        String curso
+        String curso,
+
+        @NotBlank(message = "Campo obrigatorio")
+        @Size(max = 255, message = "matricula deve ter no maximo 255 caracteres")
+        String matricula
 ) {
 }

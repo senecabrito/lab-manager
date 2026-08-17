@@ -9,6 +9,7 @@ public record UsuarioResponseDTO(
         String nome,
         String email,
         TipoDeUsuarios tipoDeUsuarios,
-        String curso
+        String curso,
+        String matricula
 ) {
 }

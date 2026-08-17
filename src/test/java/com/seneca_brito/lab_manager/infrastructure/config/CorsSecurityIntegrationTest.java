@@ -25,7 +25,7 @@ class CorsSecurityIntegrationTest {
 
     @Test
     void allowsValidPreflightThroughSecurityWithoutCredentials() throws Exception {
-        mockMvc.perform(options("/usuarios")
+        mockMvc.perform(options("/api/v1/usuarios")
                         .header(HttpHeaders.ORIGIN, ALLOWED_ORIGIN)
                         .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
                         .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS,
@@ -37,7 +37,7 @@ class CorsSecurityIntegrationTest {
 
     @Test
     void rejectsUnknownOriginBeforeAuthentication() throws Exception {
-        mockMvc.perform(options("/usuarios")
+        mockMvc.perform(options("/api/v1/usuarios")
                         .header(HttpHeaders.ORIGIN, "https://unknown.example")
                         .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST"))
                 .andExpect(status().isForbidden())
@@ -46,7 +46,7 @@ class CorsSecurityIntegrationTest {
 
     @Test
     void rejectsMethodOutsideCorsPolicy() throws Exception {
-        mockMvc.perform(options("/usuarios")
+        mockMvc.perform(options("/api/v1/usuarios")
                         .header(HttpHeaders.ORIGIN, ALLOWED_ORIGIN)
                         .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "HEAD"))
                 .andExpect(status().isForbidden());
@@ -54,7 +54,7 @@ class CorsSecurityIntegrationTest {
 
     @Test
     void rejectsHeaderOutsideCorsPolicy() throws Exception {
-        mockMvc.perform(options("/usuarios")
+        mockMvc.perform(options("/api/v1/usuarios")
                         .header(HttpHeaders.ORIGIN, ALLOWED_ORIGIN)
                         .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
                         .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "x-custom-header"))
@@ -63,7 +63,7 @@ class CorsSecurityIntegrationTest {
 
     @Test
     void keepsApplicationEndpointsProtected() throws Exception {
-        mockMvc.perform(get("/usuarios"))
+        mockMvc.perform(get("/api/v1/usuarios"))
                 .andExpect(status().isUnauthorized());
     }
 }

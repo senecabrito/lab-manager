@@ -1,8 +1,8 @@
 package com.seneca_brito.lab_manager.application.Commands.usuario.create;
 
+import com.seneca_brito.lab_manager.application.Commands.autenticacao.cadastro.CadastroHandler;
 import com.seneca_brito.lab_manager.domain.Usuario;
-import com.seneca_brito.lab_manager.infrastructure.repositories.UsuarioRepository;
-import jakarta.validation.Valid;
+import com.seneca_brito.lab_manager.shared.DTOs.usuarioDTOs.UsuarioRequestDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -10,10 +10,10 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class CreateUsuarioHandler {
 
-    private final UsuarioRepository usuarioRepository;
+    private final CadastroHandler cadastroHandler;
 
 
-    public Usuario create(@Valid Usuario usuario) {
-        return usuarioRepository.save(usuario);
+    public Usuario create(UsuarioRequestDTO dto) {
+        return cadastroHandler.create(dto);
     }
 }

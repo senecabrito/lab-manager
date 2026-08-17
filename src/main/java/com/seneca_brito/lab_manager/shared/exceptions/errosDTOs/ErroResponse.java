@@ -13,5 +13,8 @@ public record ErroResponse(
         return new ErroResponse(HttpStatus.BAD_REQUEST.value(), mensagem, List.of());
     }
 
+    public static ErroResponse of(HttpStatus status, String mensagem) {
+        return new ErroResponse(status.value(), mensagem, List.of());
+    }
 
 }

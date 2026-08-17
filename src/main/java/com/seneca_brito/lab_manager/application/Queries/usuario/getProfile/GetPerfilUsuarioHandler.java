@@ -1,4 +1,4 @@
-package com.seneca_brito.lab_manager.application.Queries.usuario.getById;
+package com.seneca_brito.lab_manager.application.Queries.usuario.getProfile;
 
 import com.seneca_brito.lab_manager.domain.Usuario;
 import com.seneca_brito.lab_manager.infrastructure.repositories.UsuarioRepository;
@@ -6,19 +6,14 @@ import com.seneca_brito.lab_manager.shared.exceptions.RecursoNaoEncontradoExcept
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
-public class GetByIdUsuarioHandler {
+public class GetPerfilUsuarioHandler {
 
     private final UsuarioRepository usuarioRepository;
 
-
-    public Usuario findById(UUID id) {
-        return usuarioRepository.findById(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuario nao encontrado"));
+    public Usuario findAuthenticated(String email) {
+        return usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuario autenticado nao encontrado"));
     }
-
-
 }

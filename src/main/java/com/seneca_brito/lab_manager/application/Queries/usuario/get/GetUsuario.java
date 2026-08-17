@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/usuarios")
+@RequestMapping("/api/v1/usuarios")
 @RequiredArgsConstructor
 public class GetUsuario {
 

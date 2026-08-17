@@ -17,8 +17,12 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,11 +44,12 @@ class CadastroHandlerTest {
                 .nome(RoleTypeEnum.USUARIO.name())
                 .build();
         UsuarioRequestDTO dto = new UsuarioRequestDTO(
-                "Usuario Teste", "usuario@example.com", "Senha#123", "Computacao");
+                "Usuario Teste", "usuario@example.com", "Senha#123", "Computacao", "20260001");
         when(usuarioRepository.existsByEmail(dto.email())).thenReturn(false);
+        when(usuarioRepository.existsByMatricula(dto.matricula())).thenReturn(false);
         when(rolesRepository.findByNome(RoleTypeEnum.USUARIO.name())).thenReturn(Optional.of(role));
         when(passwordEncoder.encode(dto.senha())).thenReturn("encoded-password");
-        when(usuarioRepository.save(any(Usuario.class)))
+        when(usuarioRepository.saveAndFlush(any(Usuario.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         CadastroHandler handler = new CadastroHandler(
                 usuarioRepository, passwordEncoder, rolesRepository);
@@ -54,8 +59,24 @@ class CadastroHandlerTest {
         assertEquals(dto.nome(), usuario.getNome());
         assertEquals(dto.email(), usuario.getEmail());
         assertEquals(dto.curso(), usuario.getCurso());
+        assertEquals(dto.matricula(), usuario.getMatricula());
         assertEquals("encoded-password", usuario.getSenha());
+        assertNotEquals(dto.senha(), usuario.getSenha());
         assertEquals(TipoDeUsuarios.PROF, usuario.getTipoDeUsuarios());
         assertTrue(usuario.getRoles().contains(role));
+    }
+
+    @Test
+    void rejectsDuplicateMatriculaBeforePersistence() {
+        UsuarioRequestDTO dto = new UsuarioRequestDTO(
+                "Usuario Teste", "usuario@example.com", "Senha#123", "Computacao", "20260001");
+        when(usuarioRepository.existsByEmail(dto.email())).thenReturn(false);
+        when(usuarioRepository.existsByMatricula(dto.matricula())).thenReturn(true);
+        CadastroHandler handler = new CadastroHandler(
+                usuarioRepository, passwordEncoder, rolesRepository);
+
+        assertThrows(com.seneca_brito.lab_manager.shared.exceptions.RegistroDuplicadoException.class,
+                () -> handler.create(dto));
+        verify(usuarioRepository, never()).saveAndFlush(any());
     }
 }

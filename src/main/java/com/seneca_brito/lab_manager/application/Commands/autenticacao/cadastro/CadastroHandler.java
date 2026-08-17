@@ -11,6 +11,7 @@ import com.seneca_brito.lab_manager.shared.exceptions.RegistroDuplicadoException
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 
@@ -22,23 +23,30 @@ public class CadastroHandler {
     private final PasswordEncoder encoder;
     private final RolesRepository rolesRepository;
 
+    @Transactional
     public Usuario create(UsuarioRequestDTO dto) {
-        if(usuarioRepository.existsByEmail(dto.email())){
-            throw new RegistroDuplicadoException("email já estão em uso");
+        if (usuarioRepository.existsByEmail(dto.email())) {
+            throw new RegistroDuplicadoException("Email ja esta em uso");
+        }
+        if (usuarioRepository.existsByMatricula(dto.matricula())) {
+            throw new RegistroDuplicadoException("Matricula ja esta em uso");
         }
 
-        RolesEntity roles = rolesRepository.findByNome(RoleTypeEnum.USUARIO.name())
-                .orElseGet(()-> rolesRepository.save(RolesEntity.builder().nome(RoleTypeEnum.USUARIO.name())
+        RolesEntity role = rolesRepository.findByNome(RoleTypeEnum.USUARIO.name())
+                .orElseGet(() -> rolesRepository.save(RolesEntity.builder()
+                        .nome(RoleTypeEnum.USUARIO.name())
                         .build()));
 
-
-        return usuarioRepository.save(Usuario.builder()
+        Usuario usuario = Usuario.builder()
                 .nome(dto.nome())
                 .email(dto.email())
                 .curso(dto.curso())
+                .matricula(dto.matricula())
                 .tipoDeUsuarios(TipoDeUsuarios.PROF)
-                .roles(Set.of(roles))
+                .roles(Set.of(role))
                 .senha(encoder.encode(dto.senha()))
-                .build());
+                .build();
+
+        return usuarioRepository.saveAndFlush(usuario);
     }
 }

@@ -1,9 +1,13 @@
 package com.seneca_brito.lab_manager.infrastructure.security.config;
 
+import com.seneca_brito.lab_manager.shared.ENUM.RoleTypeEnum;
+import com.seneca_brito.lab_manager.shared.exceptions.errosDTOs.ErroResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -14,8 +18,12 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import tools.jackson.databind.ObjectMapper;
+
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 @Configuration
 @EnableWebSecurity
@@ -23,6 +31,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfiguration {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final ObjectMapper objectMapper;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -31,11 +40,17 @@ public class SecurityConfiguration {
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                        .authenticationEntryPoint((request, response, authenticationException) ->
+                                writeError(response, HttpStatus.UNAUTHORIZED, "Autenticacao obrigatoria"))
                         .accessDeniedHandler((request, response, accessDeniedException) ->
-                                response.setStatus(HttpStatus.FORBIDDEN.value())))
+                                writeError(response, HttpStatus.FORBIDDEN, "Acesso negado")))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/autenticacao/**").permitAll()
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/v1/autenticacao/cadastro",
+                                "/api/v1/autenticacao/login").permitAll()
+                        .requestMatchers("/api/v1/usuarios/me").authenticated()
+                        .requestMatchers("/api/v1/usuarios", "/api/v1/usuarios/**")
+                                .hasAuthority(RoleTypeEnum.ADMINISTRACAO.name())
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
@@ -50,5 +65,13 @@ public class SecurityConfiguration {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration){
         return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    private void writeError(HttpServletResponse response, HttpStatus status, String message)
+            throws IOException {
+        response.setStatus(status.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        objectMapper.writeValue(response.getOutputStream(), ErroResponse.of(status, message));
     }
 }

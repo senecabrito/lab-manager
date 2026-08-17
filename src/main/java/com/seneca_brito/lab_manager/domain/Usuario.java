@@ -46,6 +46,9 @@ public class Usuario implements UserDetails {
     @Column(name = "curso", nullable = false, length = 120)
     private String curso;
 
+    @Column(name = "matricula", nullable = false, unique = true, length = 255)
+    private String matricula;
+
     @OneToMany(mappedBy = "usuario",fetch = FetchType.LAZY)
     private List<Reserva> reservas;
 
